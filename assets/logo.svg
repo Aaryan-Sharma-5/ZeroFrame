@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ZeroFrame logo">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="20%" r="90%">
+      <stop offset="0%" stop-color="#1a1410"/>
+      <stop offset="55%" stop-color="#0e0b08"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E69A4C"/>
+      <stop offset="100%" stop-color="#C97832"/>
+    </linearGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#2c2418" stroke-width="2"/>
+
+  <!-- corner frame brackets ("Frame") -->
+  <g stroke="url(#orange)" stroke-width="14" stroke-linecap="round" fill="none">
+    <path d="M120 158 V120 H158"/>
+    <path d="M354 120 H392 V158"/>
+    <path d="M392 354 V392 H354"/>
+    <path d="M158 392 H120 V354"/>
+  </g>
+
+  <!-- stylized Z ("Zero") -->
+  <path d="M178 188 H334 L210 324 H336" fill="none" stroke="url(#orange)" stroke-width="30" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- ball accent at the center of the frame -->
+  <circle cx="256" cy="256" r="9" fill="#ffffff" opacity="0.95"/>
+</svg>

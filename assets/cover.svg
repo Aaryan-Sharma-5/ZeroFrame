@@ -1,0 +1,54 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ZeroFrame cover">
+  <defs>
+    <radialGradient id="cbg" cx="22%" cy="12%" r="110%">
+      <stop offset="0%" stop-color="#1b1510"/>
+      <stop offset="55%" stop-color="#0d0a07"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </radialGradient>
+    <linearGradient id="corange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0A961"/>
+      <stop offset="100%" stop-color="#C97832"/>
+    </linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C97832" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#C97832" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#cbg)"/>
+
+  <!-- subtle pitch grid -->
+  <g stroke="#8a6b3b" stroke-opacity="0.12" stroke-width="1.5">
+    <path d="M0 180 H1280 M0 360 H1280 M0 540 H1280"/>
+    <path d="M160 0 V720 M480 0 V720 M800 0 V720 M1120 0 V720"/>
+  </g>
+  <rect width="1280" height="360" fill="url(#fade)"/>
+
+  <!-- center pitch circle motif on the right -->
+  <g transform="translate(1010 360)">
+    <circle r="170" fill="none" stroke="url(#corange)" stroke-opacity="0.30" stroke-width="3"/>
+    <circle r="6" fill="#C97832"/>
+    <g stroke="url(#corange)" stroke-width="9" stroke-linecap="round" fill="none">
+      <path d="M-120 -78 V-120 H-78"/>
+      <path d="M78 -120 H120 V-78"/>
+      <path d="M120 78 V120 H78"/>
+      <path d="M-78 120 H-120 V78"/>
+    </g>
+    <path d="M-74 -52 H82 L-44 84 H86" fill="none" stroke="url(#corange)" stroke-width="20" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle r="7" fill="#ffffff" opacity="0.95"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="96" y="330" font-family="'Segoe UI', Arial, sans-serif" font-size="104" font-weight="800" fill="#E8E8E8" letter-spacing="-2">Zero<tspan fill="#C97832">Frame</tspan></text>
+
+  <!-- tagline -->
+  <text x="100" y="392" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="500" fill="#cdb79a">Decentralized AI that turns raw match footage</text>
+  <text x="100" y="432" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="500" fill="#cdb79a">into verifiable, captioned goal highlights.</text>
+
+  <!-- 0G chip -->
+  <g transform="translate(100 478)">
+    <rect width="240" height="46" rx="23" fill="#181206" stroke="#3a2f1c" stroke-width="1.5"/>
+    <circle cx="30" cy="23" r="7" fill="#22c55e"/>
+    <text x="52" y="30" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600" fill="#e0d2bd">Powered by 0G</text>
+  </g>
+</svg>
