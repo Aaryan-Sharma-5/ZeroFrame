@@ -1,0 +1,42 @@
+# ZeroFrame local stack: Redis + FastAPI API + RQ worker.
+#   docker compose up --build
+# Watch the flow: POST /process (api) → enqueue (redis) → process_video_job (worker).
+# Put ZG_PRIVATE_KEY / ZG_COMPUTE_API_KEY in a .env file next to this compose file.
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    # /upload needs ZG_PRIVATE_KEY + RPC + indexer to run the Go CLI; load from backend/.env.
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0   # override: backend/.env may point REDIS_URL at localhost
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./worker
+    command: ["rq", "worker", "zeroframe", "--url", "redis://redis:6379/0"]
+    # Load secrets/0G config straight from backend/.env (compose's ${} substitution only
+    # reads a ROOT .env, so env_file is how the funded ZG_PRIVATE_KEY reaches the container).
+    env_file:
+      - ./backend/.env
+    environment:
+      # Must override: backend/.env's REDIS_URL (if any) points at localhost, wrong on the
+      # compose network. caption.py defaults the compute vars when unset (→ fallback caption).
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy

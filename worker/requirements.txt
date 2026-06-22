@@ -1,0 +1,12 @@
+librosa==0.10.2
+soundfile==0.12.1
+numpy==1.26.4
+ultralytics==8.2.0
+opencv-python-headless==4.9.0.80
+ffmpeg-python==0.2.0
+httpx==0.27.0
+redis>=5.0
+rq>=1.16
+openai>=1.0          # 0G Compute Router client (caption.py)
+# 0G Storage SDK — package name TBD; update storage_client.py import once confirmed
+# 0g-sdk
