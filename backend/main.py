@@ -6,6 +6,7 @@ import tempfile
 import uuid
 from typing import Literal
 
+import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,10 +24,33 @@ app = FastAPI(title="ZeroFrame API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],         
+    allow_origins=["*"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def keep_alive():
+    """
+    Ping /health every 10 minutes to prevent Render free-tier sleep.
+    Render injects RENDER_EXTERNAL_URL automatically; absent in local dev so this
+    becomes a no-op when running via docker compose.
+    """
+    async def _ping():
+        url = os.environ.get("RENDER_EXTERNAL_URL", "")
+        if not url:
+            return
+        await asyncio.sleep(60)  # wait for full startup before first ping
+        async with httpx.AsyncClient() as client:
+            while True:
+                try:
+                    await client.get(f"{url}/health", timeout=5)
+                except Exception:
+                    pass
+                await asyncio.sleep(600)  # every 10 minutes
+
+    asyncio.create_task(_ping())
 
 _ROOT_HASH_RE = re.compile(r"^0x[a-fA-F0-9]{64}$")
 
@@ -113,8 +137,14 @@ async def process_video(body: ProcessRequest):
             compute_client.submit_job, job_id, body.root_hash, body.storage_cid
         )
     except RedisError as exc:
-        logger.error("Job enqueue failed for %s: %s", job_id, exc)
-        raise HTTPException(status_code=503, detail=f"Job queue unavailable: {exc}")
+        logger.error("Redis unavailable for %s: %s", job_id, exc)
+        raise HTTPException(status_code=503, detail=f"Job store unavailable: {exc}")
+    except httpx.HTTPError as exc:
+        logger.error("Modal dispatch failed for %s: %s", job_id, exc)
+        raise HTTPException(status_code=502, detail=f"Worker dispatch failed: {exc}")
+    except RuntimeError as exc:
+        logger.error("Configuration error for %s: %s", job_id, exc)
+        raise HTTPException(status_code=503, detail=str(exc))
 
     logger.info("Enqueued job %s file=%s", job_id, body.filename)
     return ProcessResponse(job_id=job_id, status="queued")

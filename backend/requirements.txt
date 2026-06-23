@@ -5,9 +5,8 @@ pydantic>=2.11
 pydantic-settings>=2.5
 python-dotenv>=1.0.1
 redis>=5.0
-rq>=1.16
 python-multipart>=0.0.9   # POST /upload multipart file handling
 # NOTE: no ML deps here. ultralytics/cv2/librosa/openai live ONLY in worker/requirements.txt.
-# FastAPI enqueues the worker job by string reference, so it never imports them.
+# FastAPI dispatches the worker job via HTTP to the Modal trigger endpoint — it never imports them.
 # /upload shells out to the Go 0g-storage-client binary (baked in Dockerfile) — the browser
 # TS SDK reverts on Galileo, so uploads run server-side here. No ML/video libs imported.

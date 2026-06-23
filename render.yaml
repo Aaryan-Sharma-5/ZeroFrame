@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: zeroframe-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          name: zeroframe-redis
+          type: redis
+          property: connectionString
+
+      # ── 0G Storage / chain ───────────────────────────────────────────────────
+      - key: ZG_PRIVATE_KEY
+        sync: false
+      - key: ZG_STORAGE_NODE_URL
+        sync: false
+      - key: ZG_RPC_URL
+        sync: false
+
+      # ── 0G Compute ───────────────────────────────────────────────────────────
+      - key: ZG_COMPUTE_ROUTER_URL
+        sync: false
+      - key: ZG_COMPUTE_MODEL
+        sync: false
+      - key: ZG_COMPUTE_API_KEY
+        sync: false
+
+      # ── Pipeline tuning ───────────────────────────────────────────────────────
+      - key: ZF_AUDIO_SPIKE_RATIO
+        value: "1.5"
+
+      # ── Modal dispatch ────────────────────────────────────────────────────────
+      - key: MODAL_ENDPOINT
+        sync: false
+      - key: MODAL_TOKEN_ID
+        sync: false
+
+  - type: redis
+    name: zeroframe-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Allow Modal cross-cloud access

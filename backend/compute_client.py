@@ -1,24 +1,25 @@
 """
-Job orchestration for ZeroFrame — Redis-backed state + RQ enqueue.
+Job orchestration for ZeroFrame — Redis-backed state + Modal HTTP dispatch.
 
-This module is PURE orchestration. It does NOT call 0G Compute (no REST, no bearer
-token — that shape was fictional). It does NOT import the worker's ML stack. It mints
-nothing heavier than a Redis round-trip:
+This module is PURE orchestration. It writes job state to Redis and dispatches
+the ML pipeline to Modal's serverless GPU function via HTTP. It never imports
+the worker's ML stack (ultralytics/cv2/librosa stay in the worker image only).
 
-  submit_job()     → write "pending" state to Redis, enqueue the worker job by STRING
-                     reference so this process never imports ultralytics/cv2/librosa.
-  get_job_status() → read the job-state JSON the worker writes back.
+  submit_job()     → write "pending" state to Redis, POST to Modal trigger endpoint
+  get_job_status() → read the job-state JSON the worker writes back
+  healthcheck()    → Redis ping
 
-The worker (separate process) owns the same Redis key `zf:job:{job_id}` and advances it
-pending → processing → complete | failed. See worker/worker.py for the writer side.
+The Modal trigger endpoint returns immediately (fire-and-forget); the GPU pipeline
+runs asynchronously in Modal's cloud and writes results back to Redis when done.
 """
 import json
 import logging
+import os
 from typing import Any, Optional
 
+import httpx
 from redis import Redis
 from redis.exceptions import RedisError
-from rq import Queue
 
 from config import settings
 
@@ -27,12 +28,13 @@ logger = logging.getLogger(__name__)
 # Shared job-state contract. Keep in sync with worker/worker.py.
 _JOB_KEY = "zf:job:{job_id}"
 _JOB_TTL_SECONDS = 24 * 3600
-_QUEUE_NAME = "zeroframe"
-# String reference, NOT an import — keeps the heavy ML deps out of the API process.
-_WORKER_JOB = "worker.process_video_job"
 
 _redis = Redis.from_url(settings.redis_url, decode_responses=True)
-_queue = Queue(_QUEUE_NAME, connection=_redis)
+
+# Modal trigger URL — printed by `modal deploy worker/modal_worker.py`.
+# Set as MODAL_ENDPOINT in Render dashboard.
+_MODAL_ENDPOINT = os.environ.get("MODAL_ENDPOINT", "")
+_MODAL_TOKEN_ID = os.environ.get("MODAL_TOKEN_ID", "")
 
 
 def _key(job_id: str) -> str:
@@ -54,23 +56,36 @@ def _initial_state() -> dict[str, Any]:
 
 def submit_job(job_id: str, root_hash: str, storage_cid: str) -> None:
     """
-    Write the pending state and enqueue the worker job under the SAME job_id.
+    Write pending state to Redis, then dispatch to Modal trigger endpoint via HTTP.
 
-    Owning the id end-to-end (mint → enqueue → worker writes back under the same key)
-    eliminates the old optimistic/real-id reconciliation bug entirely.
+    Owning the id end-to-end (mint → Redis write → Modal spawn → worker writes back
+    under the same key) eliminates any poll-before-worker-starts 404 race.
 
-    Raises RedisError if the queue/store is unreachable — the caller surfaces 503.
+    Raises:
+        RuntimeError  — MODAL_ENDPOINT env var not set (misconfiguration)
+        RedisError    — Redis unreachable (surfaces as 503)
+        httpx.HTTPError — Modal endpoint returned a non-2xx status
     """
+    if not _MODAL_ENDPOINT:
+        raise RuntimeError("MODAL_ENDPOINT env var is not set — run `modal deploy` first")
+
+    # Write pending state first so /status never returns 404 for a known job_id.
     _redis.set(_key(job_id), json.dumps(_initial_state()), ex=_JOB_TTL_SECONDS)
-    _queue.enqueue(
-        _WORKER_JOB,
-        kwargs={"job_id": job_id, "root_hash": root_hash, "storage_cid": storage_cid},
-        job_id=job_id,
-        job_timeout=1800,        # 30 min ceiling for a long match
-        result_ttl=_JOB_TTL_SECONDS,
-        failure_ttl=_JOB_TTL_SECONDS,
-    )
-    logger.info("Enqueued job %s (storage_cid=%s)", job_id, storage_cid)
+
+    # POST to Modal trigger — returns immediately (Modal spawns the GPU function async).
+    headers = {}
+    if _MODAL_TOKEN_ID:
+        headers["Modal-Key"] = _MODAL_TOKEN_ID
+
+    with httpx.Client(timeout=15) as client:
+        resp = client.post(
+            _MODAL_ENDPOINT,
+            json={"job_id": job_id, "root_hash": root_hash, "storage_cid": storage_cid},
+            headers=headers,
+        )
+        resp.raise_for_status()
+
+    logger.info("Dispatched job %s to Modal (storage_cid=%s)", job_id, storage_cid)
 
 
 def get_job_status(job_id: str) -> Optional[dict[str, Any]]:
@@ -82,10 +97,10 @@ def get_job_status(job_id: str) -> Optional[dict[str, Any]]:
 
 
 def healthcheck() -> dict[str, Any]:
-    """Liveness of the Redis/RQ backbone for /health."""
+    """Liveness of the Redis backbone and Modal configuration for /health."""
     try:
         _redis.ping()
-        return {"redis_ok": True, "queued": _queue.count}
+        return {"redis_ok": True, "modal_configured": bool(_MODAL_ENDPOINT)}
     except RedisError as exc:
         logger.warning("Redis ping failed: %s", exc)
-        return {"redis_ok": False, "queued": None}
+        return {"redis_ok": False, "modal_configured": bool(_MODAL_ENDPOINT)}
