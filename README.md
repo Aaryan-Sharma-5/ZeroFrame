@@ -6,6 +6,8 @@ ZeroFrame ingests a full match, detects goal moments from crowd-noise spikes, sp
 
 > Built for **Zero Cup · 0G Global Vibe Coding Tournament**.
 
+**[Live demo](https://zeroframe-coral.vercel.app) · [Demo video](https://drive.google.com/file/d/1JC0OlfsarFDlhGGeyuRZffaZeBqj0dJw/view) · [Repository](https://github.com/Aaryan-Sharma-5/ZeroFrame)**
+
 ---
 
 ## ✨ What it does
@@ -42,6 +44,8 @@ ZeroFrame ingests a full match, detects goal moments from crowd-noise spikes, sp
      [ Next.js Frontend ]  ── polls GET /status/{job_id} every 3s,
                               streams clips, renders CIDs + compute response IDs
 ```
+
+**Deployed (no-VPS, free tier):** Next.js frontend on **Vercel** → FastAPI + Redis on **Render** → the video worker as a serverless GPU container on **Modal** (runs on trigger, not always-on) → **0G Storage + 0G Compute** on the Galileo testnet. The worker writes job results straight back to Render's Redis. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for live URLs, the demo walkthrough, and the pre-demo checklist.
 
 ### Why 0G is required
 - **Storage** — the match footage and every highlight clip live on 0G Storage, each addressed by a cryptographic CID (merkle root). No centralized blob store.

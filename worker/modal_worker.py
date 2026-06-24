@@ -23,7 +23,19 @@ app = modal.App("zeroframe-worker")
 # ---------------------------------------------------------------------------
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("ffmpeg", "libsndfile1", "libgl1", "libglib2.0-0")
+    .apt_install("ffmpeg", "libsndfile1", "libgl1", "libglib2.0-0", "git", "curl")
+    # Build the official 0g-storage-client Go CLI — same as the worker Dockerfile.
+    # The binary is copied to /usr/local/bin; Go toolchain is removed afterwards to save space.
+    .run_commands(
+        "curl -fsSL https://go.dev/dl/go1.24.0.linux-amd64.tar.gz -o /tmp/go.tar.gz "
+        "&& tar -C /usr/local -xzf /tmp/go.tar.gz "
+        "&& rm /tmp/go.tar.gz "
+        "&& git clone --depth 1 https://github.com/0glabs/0g-storage-client.git /tmp/0g-src "
+        "&& cd /tmp/0g-src "
+        "&& /usr/local/go/bin/go build -o /usr/local/bin/0g-storage-client . "
+        "&& /usr/local/bin/0g-storage-client --help > /dev/null "
+        "&& rm -rf /tmp/0g-src /usr/local/go"
+    )
     # CPU-only torch FIRST — prevents ultralytics pulling the multi-GB CUDA build.
     # torch 2.2.2 keeps weights_only=False default that ultralytics 8.2.0 requires.
     .run_commands(

@@ -23,11 +23,18 @@ These are the non-negotiable boundaries the codebase is built around.
    file is streamed to a temp path and deleted after; no ML/video libraries are imported,
    it only runs a subprocess.
 
-2. **All heavy lifting runs in a self-hosted worker, dispatched via Redis + RQ.** ffmpeg,
+2. **All heavy lifting runs in a separate worker, never in the API process.** ffmpeg,
    YOLOv8, librosa, clip splicing, 0G Storage uploads, and the 0G Compute caption call all
-   happen inside the worker process — a separate deployment from the API. FastAPI enqueues
-   by **string reference** (`"worker.process_video_job"`) so the web process never imports
-   the heavy ML stack.
+   happen inside the worker — a separate deployment from the API — so the web process never
+   imports the heavy ML stack. Two interchangeable dispatch paths realize this:
+   - **Local / self-hosted:** Redis + RQ. FastAPI enqueues by **string reference**
+     (`"worker.process_video_job"`); a long-running RQ worker picks it up. This is what
+     `docker compose up` runs.
+   - **Production (free tier):** the same `run_pipeline` runs as a serverless GPU container
+     on **Modal**, triggered by an HTTP call from FastAPI instead of an RQ enqueue. The
+     worker still writes results back to the same Redis job key, so the [job-state
+     contract](#job-state-contract) below is identical on both paths. See
+     [DEPLOYMENT.md](DEPLOYMENT.md).
 
 3. **Uploads go through the backend Go CLI, not the browser SDK.** The browser
    `@0glabs/0g-ts-sdk` `indexer.upload()` reverts on the Galileo Flow contract (gasUsed
@@ -63,7 +70,7 @@ Browser
   │
   ├─[2]─ POST /process { root_hash, storage_cid } ──────────► FastAPI
   │       FastAPI mints job_id, writes "pending" to Redis,
-  │       enqueues "worker.process_video_job" to RQ,
+  │       dispatches the worker (RQ enqueue locally / Modal HTTP trigger in prod),
   │       returns { job_id } immediately (non-blocking)
   │
   ├─[3]─ GET /status/{job_id} (poll every 3s) ─────────────► FastAPI
@@ -74,7 +81,7 @@ Browser
           each clip is served directly from the 0G Storage gateway
           (no video bytes pass through FastAPI at status/playback time)
 
-Inside the self-hosted RQ worker (separate process; reads/writes Redis):
+Inside the worker (RQ process locally / Modal function in prod; reads/writes Redis):
   set status=processing
   download the full video from the 0G gateway to local disk (librosa needs a local file)
   librosa audio RMS (global-median baseline, ZF_AUDIO_SPIKE_RATIO) → candidate windows
