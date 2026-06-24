@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/cover.svg" alt="ZeroFrame — decentralized AI football highlights on 0G" width="100%">
+</p>
+
 # ⚽ ZeroFrame
 
 **A decentralized AI video pipeline that turns raw football footage into verifiable highlight reels — powered by the 0G network.**
@@ -7,6 +11,19 @@ ZeroFrame ingests a full match, detects goal moments from crowd-noise spikes, sp
 > Built for **Zero Cup · 0G Global Vibe Coding Tournament**.
 
 **[Live demo](https://zeroframe-coral.vercel.app) · [Demo video](https://drive.google.com/file/d/1JC0OlfsarFDlhGGeyuRZffaZeBqj0dJw/view) · [Repository](https://github.com/Aaryan-Sharma-5/ZeroFrame)**
+
+<p align="center">
+  <img src="https://img.shields.io/badge/License-MIT-C97832?style=flat-square" alt="License: MIT">
+  <img src="https://img.shields.io/badge/Built%20on-0G%20Galileo%20Testnet-C97832?style=flat-square" alt="Built on 0G">
+  <img src="https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel" alt="Frontend: Vercel">
+  <img src="https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square&logo=render&logoColor=white" alt="Backend: Render">
+  <img src="https://img.shields.io/badge/Worker-Modal%20GPU-7C3AED?style=flat-square" alt="Worker: Modal">
+</p>
+
+<p align="center">
+  <img src="assets/screenshot-upload.png" alt="ZeroFrame — drop match footage, uploaded straight to 0G Storage" width="90%">
+  <br><em>Drop in raw match footage — uploaded straight to 0G Storage from the browser.</em>
+</p>
 
 ---
 
@@ -57,7 +74,7 @@ Remove 0G and the project loses both its storage layer and its proof surface.
 
 ## 🧱 Stack
 
-- **Frontend** — Next.js 14 · TypeScript · Tailwind · Framer Motion
+- **Frontend** — Next.js 16 · React 19 · TypeScript · Tailwind v4 · Framer Motion
 - **Backend** — FastAPI (thin orchestration; no ML/video libraries imported)
 - **Worker** — Python 3.11 · librosa · ffmpeg · YOLOv8 · OpenAI client → 0G Compute Router
 - **Infra** — Redis + RQ · 0G Storage · 0G Compute · 0G Galileo Testnet
@@ -117,6 +134,11 @@ Frontend (`frontend/.env`): see [frontend/.env.example](frontend/.env.example).
 ---
 
 ## 🔍 Proof surface
+
+<p align="center">
+  <img src="assets/screenshot-proof.png" alt="ZeroFrame processing receipt — 0G Storage CIDs, pipeline stages, and captioned highlight clips" width="90%">
+  <br><em>The processing receipt: 0G Storage CIDs, the live pipeline, and captioned goal highlights.</em>
+</p>
 
 For each completed job the UI shows what is genuinely verifiable — and labels it honestly:
 
